@@ -7,7 +7,7 @@ def home():
 
     return jsonify({
         "status":"healthy",
-        "service":"ecommerce-backend"
+        "service":"ecommerce-backend--2"
     })
 
 @app.route('/api/products')
