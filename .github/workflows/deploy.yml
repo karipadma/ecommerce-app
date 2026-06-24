@@ -101,7 +101,7 @@ jobs:
 
 
 
-        # Update frontend image
+        # Update frontend image in gitops
 
         sed -i "s|image:.*frontend.*|image: 381491929425.dkr.ecr.us-east-1.amazonaws.com/frontend:${{ github.sha }}|" \
         frontend/deployment.yaml
