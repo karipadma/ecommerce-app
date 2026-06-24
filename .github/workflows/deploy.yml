@@ -50,6 +50,7 @@ jobs:
         381491929425.dkr.ecr.us-east-1.amazonaws.com/backend:${{ github.sha }}
 
 
+
     - name: Update GitOps repository
       env:
         GITOPS_TOKEN: ${{ secrets.GITOPS_TOKEN }}
@@ -60,18 +61,15 @@ jobs:
 
         cd ecommerce-gitops
 
-
         sed -i "s|image:.*|image: 381491929425.dkr.ecr.us-east-1.amazonaws.com/backend:${{ github.sha }}|" backend/deployment.yaml
-
 
         git config user.name "github-actions"
         git config user.email "github-actions@github.com"
 
-
         git add backend/deployment.yaml
 
+        git commit -m "Update backend image to ${{ github.sha }}" || echo "No changes"
 
-        git commit -m "Update backend image to ${{ github.sha }}"
+        git remote set-url origin https://x-access-token:${GITOPS_TOKEN}@github.com/karipadma/ecommerce-gitops.git
 
-
-        git push https://karipadma:${GITOPS_TOKEN}@github.com/karipadma/ecommerce-gitops.git
+        git push origin main
