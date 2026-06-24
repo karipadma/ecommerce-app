@@ -12,7 +12,7 @@ permissions:
 
 jobs:
 
-  build-backend:
+  build-and-deploy:
 
     runs-on: ubuntu-latest
 
@@ -33,6 +33,9 @@ jobs:
       uses: aws-actions/amazon-ecr-login@v2
 
 
+
+    # ---------------- BACKEND ----------------
+
     - name: Build backend image
       run: |
         docker build -t backend:v1 ./backend
@@ -44,11 +47,37 @@ jobs:
         381491929425.dkr.ecr.us-east-1.amazonaws.com/backend:${{ github.sha }}
 
 
-    - name: Push image to ECR
+    - name: Push backend image
       run: |
         docker push \
         381491929425.dkr.ecr.us-east-1.amazonaws.com/backend:${{ github.sha }}
 
+
+
+
+    # ---------------- FRONTEND ----------------
+
+
+    - name: Build frontend image
+      run: |
+        docker build -t frontend:v1 ./frontend
+
+
+    - name: Tag frontend image
+      run: |
+        docker tag frontend:v1 \
+        381491929425.dkr.ecr.us-east-1.amazonaws.com/frontend:${{ github.sha }}
+
+
+    - name: Push frontend image
+      run: |
+        docker push \
+        381491929425.dkr.ecr.us-east-1.amazonaws.com/frontend:${{ github.sha }}
+
+
+
+
+    # ---------------- GITOPS UPDATE ----------------
 
 
     - name: Update GitOps repository
@@ -57,19 +86,45 @@ jobs:
 
       run: |
 
+
         git clone https://github.com/karipadma/ecommerce-gitops.git
+
 
         cd ecommerce-gitops
 
-        sed -i "s|image:.*|image: 381491929425.dkr.ecr.us-east-1.amazonaws.com/backend:${{ github.sha }}|" backend/deployment.yaml
+
+
+        # Update backend image
+
+        sed -i "s|image:.*backend.*|image: 381491929425.dkr.ecr.us-east-1.amazonaws.com/backend:${{ github.sha }}|" \
+        backend/deployment.yaml
+
+
+
+        # Update frontend image
+
+        sed -i "s|image:.*frontend.*|image: 381491929425.dkr.ecr.us-east-1.amazonaws.com/frontend:${{ github.sha }}|" \
+        frontend/deployment.yaml
+
+
+
 
         git config user.name "github-actions"
+
         git config user.email "github-actions@github.com"
 
-        git add backend/deployment.yaml
 
-        git commit -m "Update backend image to ${{ github.sha }}" || echo "No changes"
+
+        git add backend/deployment.yaml frontend/deployment.yaml
+
+
+
+        git commit -m "Update frontend and backend images ${{ github.sha }}" || echo "No changes"
+
+
 
         git remote set-url origin https://x-access-token:${GITOPS_TOKEN}@github.com/karipadma/ecommerce-gitops.git
+
+
 
         git push origin main
