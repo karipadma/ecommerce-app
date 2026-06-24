@@ -5,63 +5,73 @@ on:
     branches:
       - main
 
-
-
 permissions:
   id-token: write
   contents: write
 
+
 jobs:
 
   build-backend:
+
     runs-on: ubuntu-latest
 
     steps:
 
-    - name: Checkout
+    - name: Checkout application code
       uses: actions/checkout@v4
 
-    - name: AWS Login
+
+    - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
         role-to-assume: arn:aws:iam::381491929425:role/GitHubActionsRole
         aws-region: us-east-1
 
-    - name: Login ECR
+
+    - name: Login to ECR
       uses: aws-actions/amazon-ecr-login@v2
 
-    - name: Build Image
+
+    - name: Build backend image
       run: |
         docker build -t backend:v1 ./backend
 
-    - name: Tag Image
+
+    - name: Tag backend image
       run: |
         docker tag backend:v1 \
         381491929425.dkr.ecr.us-east-1.amazonaws.com/backend:${{ github.sha }}
 
-    - name: Push Image
+
+    - name: Push image to ECR
       run: |
         docker push \
         381491929425.dkr.ecr.us-east-1.amazonaws.com/backend:${{ github.sha }}
 
 
-    - name: Update GitOps Repo
-  env:
-    GITOPS_TOKEN: ${{ secrets.GITOPS_TOKEN }}
+    - name: Update GitOps repository
+      env:
+        GITOPS_TOKEN: ${{ secrets.GITOPS_TOKEN }}
 
-  run: |
+      run: |
 
-    git clone https://github.com/karipadma/ecommerce-gitops.git
+        git clone https://github.com/karipadma/ecommerce-gitops.git
 
-    cd ecommerce-gitops
+        cd ecommerce-gitops
 
-    sed -i "s|image:.*|image: 381491929425.dkr.ecr.us-east-1.amazonaws.com/backend:${{ github.sha }}|" backend/deployment.yaml
 
-    git config user.name github-actions
-    git config user.email github-actions@github.com
+        sed -i "s|image:.*|image: 381491929425.dkr.ecr.us-east-1.amazonaws.com/backend:${{ github.sha }}|" backend/deployment.yaml
 
-    git add .
 
-    git commit -m "Update backend image"
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
 
-    git push https://karipadma:${GITOPS_TOKEN}@github.com/karipadma/ecommerce-gitops.git
+
+        git add backend/deployment.yaml
+
+
+        git commit -m "Update backend image to ${{ github.sha }}"
+
+
+        git push https://karipadma:${GITOPS_TOKEN}@github.com/karipadma/ecommerce-gitops.git
