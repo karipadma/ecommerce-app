@@ -1,3 +1,12 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+
+
 permissions:
   id-token: write
   contents: write
@@ -38,7 +47,7 @@ jobs:
 
     - name: Update GitOps Repo
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITOPS_TOKEN }}
 
       run: |
 
